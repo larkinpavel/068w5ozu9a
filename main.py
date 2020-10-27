@@ -109,3 +109,34 @@ def get_random_upper_letter_digit_string(length):
 
 def get_random_digit_string(length):
     return ''.join(random.choice(string.digits) for _ in range(length))
+
+def generate_insert_statement(body):
+    return upsert('PayPalWebhookRequests', DateTimeCreated = SqlParameter('GETDATE()'), Body = SqlParameter(body, SqlParameterFormat.quotate), Headers = 'NULL', IsValid = '1', ValidationMessage = 'NULL', ProcessingStatus = '1201', ProcessingMessage = 'NULL', Path = 'NULL')
+
+def upsert(table, **kwargs):
+    keys = ["%s" % key for key in kwargs]
+    values = [str(v) for v in kwargs.values()]
+    sql = list()
+    sql.append("INSERT INTO %s \n(\n" % table)
+    sql.append(",\n".join('\t{0}'.format(key) for key in keys))
+    sql.append("\n)\nVALUES\n(")
+    sql.append(",\n".join('\t{0}'.format(value) for value in values))
+    sql.append("\n);")
+    return "".join(sql)
+
+from enum import Enum
+
+SqlParameterFormat = Enum('SqlParameterFormat', 'quotate donothing')
+
+class SqlParameter:
+    def __init__(self, value, format = SqlParameterFormat.donothing):
+        self.value = value
+        self.format = format
+        
+    def __str__(self):
+        if self.format == SqlParameterFormat.donothing:
+            return str(self.value)
+        elif self.format == SqlParameterFormat.quotate:
+            return f"'{self.value}'"
+        else:
+            return f"'{self.value}'"
